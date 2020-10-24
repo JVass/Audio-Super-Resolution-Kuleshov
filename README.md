@@ -1,6 +1,6 @@
 ## Implementation of Audio Super Resolution with Neural Networks paper
-## Author: Volodymyr Kuleshov, S. Zayd Enam, Stefano Ermon
-## Link: https://arxiv.orgs/abs/1708.00853
+# Author: Volodymyr Kuleshov, S. Zayd Enam, Stefano Ermon
+# Link: https://arxiv.orgs/abs/1708.00853
 
 This is an implementation of Mr.Kuleshov's et al paper for audio super resolution using Neural Networks and especially a deep learning technology - architecture with the name of Convolutional Autoencoder.
 
