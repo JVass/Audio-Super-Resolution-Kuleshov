@@ -16,4 +16,5 @@ If you find this helpful for a project, don't hesitate to contact me for further
 It would be very pleasing to gather up information about the training time of the network in different setups, as well as your abillity to reproduce the end results.
 
 Take care,
+
 Jx
