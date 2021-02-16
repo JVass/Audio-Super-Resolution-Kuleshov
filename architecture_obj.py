@@ -1,6 +1,8 @@
 import tensorflow as tf
 
-
+from tensorflow.keras.layers import Dense, Conv1D, Dropout, BatchNormalization, MaxPooling1D, ReLU
+from tensorflow.keras.layers.advance_activations import LeakyReLU
+from tensorflow.keras.initializations import normal, orthogonal
 
 def SNR(y_true, y_pred):
     """
@@ -37,23 +39,67 @@ def LSD(y_true, y_pred):
     return tf.math.reduce_mean(tf.math.sqrt(inside_term))
 
 class AudioUnet(tf.keras.Model):
-    def __init__(self):
-        super(MyModel, self).__init__()
+    def __init__(self, ):
+        super(AudioUnet, self).__init__()
 
+        n_filters = [128, 384, 512, 512, 512, 512, 512, 512]
+        n_filtersizes = [65, 33, 17, 9, 9, 9, 9, 9, 9]
+
+        self.downsampling = []
+        self.bottleneck = []
+        self.upsampling = []
+
+        #Downsampling block components
+        for l, nf, nfs in zip(range(L), n_filters, n_filtersizes):
+            self.downsampling.append(Conv1D(filters = nf,
+                                            kernel_size = nfs,
+                                            padding = "same",
+                                            kernel_initializer = "orthogonal"))
+            self.downsampling.append(MaxPooling1D())
+            self.dowmsampling.append(LeakyReLU(0.2))
+
+        #Bottleneck component
+        self.bottleneck.append(Conv1D(filters = n_filters[-1],
+                                        kernel_size = n_filtersizes[-1],
+                                        padding = "same",
+                                        kernel_initializer = "orthogonal"))
+        self.bottleneck.append(MaxPooling1D())
+        self.bottleneck.append(Dropout(0.5))
+        self.bottleneck.append(LeakyReLU(0.2))
+                                        
+        #Upsampling component
+        for l, nf, nfs in reversed(range(L), n_filters, n_filtersizes):
+            self.upsampling.append(Conv1D(filters = nf,
+                                            kernel_size = nfs,
+                                            padding = "same",
+                                            kernel_initializer = "orthogonal"))
+            self.upsampling.append(Dropout(0.5))
+            self.upsampling.append(ReLU())
+            self.upsampling.append(SubPixl1D())                                            
+
+    def create_downsampling_block(self, x):
+        x = 
+
+    def create_bottleneck_block(self):
+        pass
+
+    def create_upsampling_block(self):
+        pass
+    
     def SubPixel1D(I, r=2):
-    """One-dimensional subpixel upsampling layer
-    Calls a tensorflow function that directly implements this functionality.
-    We assume input has dim (batch, width, r).
-    Works with multiple channels: (B,L,rC) -> (B,rL,C)
-    """
-    with tf.name_scope('subpixel'):
-        _, w, rc = I.get_shape()
-        assert rc % r == 0
-        c = rc / r
-        X = tf.transpose(I, [2,1,0]) # (rc, w, b)
-        X = tf.batch_to_space(X, [r], [[0,0]]) # (c, r*w, b)
-        X = tf.transpose(X, [2,1,0])
-        return X
+        """One-dimensional subpixel upsampling layer
+        Calls a tensorflow function that directly implements this functionality.
+        We assume input has dim (batch, width, r).
+        Works with multiple channels: (B,L,rC) -> (B,rL,C)
+        """
+        with tf.name_scope('subpixel'):
+            _, w, rc = I.get_shape()
+            assert rc % r == 0
+            c = rc / r
+            X = tf.transpose(I, [2,1,0]) # (rc, w, b)
+            X = tf.batch_to_space(X, [r], [[0,0]]) # (c, r*w, b)
+            X = tf.transpose(X, [2,1,0])
+            return X
 
     def call(self, inputs):
         D1_conv = tf.keras.layers.Conv1D(filters = 128,
