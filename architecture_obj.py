@@ -48,15 +48,15 @@ def AudioUnet(L, ndim):
     downsampling_outputs = []
 
     #downsampling blocks
-    x = Conv1D(filters = nf,
-                kernel_size = nfs,
+    x = Conv1D(filters = n_filters[0],
+                kernel_size = n_filtersizes[0],
                 padding = "same",
                 kernel_initializer = "orthogonal")(init_input)
     x = MaxPooling1D()(x)
     x = LeakyReLU(0.2)(x)
     downsampling_outputs.append(x)
 
-    for l in range(1,L):
+    for l, nf, nfs in zip(range(1,L), n_filters, n_filtersizes):
         x = Conv1D(filters = nf,
                 kernel_size = nfs,
                 padding = "same",
@@ -75,7 +75,7 @@ def AudioUnet(L, ndim):
     x = LeakyReLU(0.2)(x)
 
     #upsampling blocks
-    for l, nf, nfs, l_in in reversed(zip(range(L), n_filters, n_filtersizes, downsampling)):
+    for l, nf, nfs, l_in in reversed(list(zip(list(range(L)), n_filters, n_filtersizes, downsampling_outputs))):
         x = Conv1D(filters = nf,
                     kernel_size = nfs,
                     padding = "same",
@@ -83,7 +83,7 @@ def AudioUnet(L, ndim):
         x = Dropout(0.5)(x)
         x = ReLU()(x)
         x = SubPixel1D(x)
-        x = concatenate(x, downsampling[l])
+        x = concatenate(x, l_in)
 
     #final convolution layer
     x = Conv1D(filters = 2,
