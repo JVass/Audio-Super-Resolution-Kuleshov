@@ -1,7 +1,6 @@
 import tensorflow as tf
 
-from tensorflow.keras.layers import Input, Dense, Conv1D, Dropout, BatchNormalization, MaxPooling1D, ReLU, concatenate, PReLU
-from tensorflow.keras.initializations import normal, orthogonal
+from tensorflow.keras.layers import Input, Dense, Conv1D, Dropout, BatchNormalization, MaxPooling1D, ReLU, concatenate, LeakyReLU, Add
 
 def SNR(y_true, y_pred):
     """
