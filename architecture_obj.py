@@ -1,7 +1,6 @@
 import tensorflow as tf
 
-from tensorflow.keras.layers import Input, Dense, Conv1D, Dropout, BatchNormalization, MaxPooling1D, ReLU, concatenate
-from tensorflow.keras.layers.advance_activations import LeakyReLU
+from tensorflow.keras.layers import Input, Dense, Conv1D, Dropout, BatchNormalization, MaxPooling1D, ReLU, concatenate, PReLU
 from tensorflow.keras.initializations import normal, orthogonal
 
 def SNR(y_true, y_pred):
@@ -39,61 +38,62 @@ def LSD(y_true, y_pred):
     return tf.math.reduce_mean(tf.math.sqrt(inside_term))
 
 def AudioUnet(L, ndim):
-    #Filter number and kernel sizes for L=1:8
-    n_filters = [128, 384, 512, 512, 512, 512, 512, 512]
-    n_filtersizes = [65, 33, 17, 9, 9, 9, 9, 9, 9]
+  n_filters = [128, 384, 512, 512, 512, 512, 512, 512]
+  n_filtersizes = [65, 33, 17, 9, 9, 9, 9, 9, 9]
 
-    init_input = Input(shape = (ndim,1))
+  init_input = Input(shape = (ndim,1))
 
-    downsampling_outputs = []
+  downsampling_outputs = []
 
-    #downsampling blocks
-    x = Conv1D(filters = n_filters[0],
-                kernel_size = n_filtersizes[0],
-                padding = "same",
-                kernel_initializer = "orthogonal")(init_input)
-    x = MaxPooling1D()(x)
+  #downsampling blocks
+  x = Conv1D(filters = n_filters[0],
+            kernel_size = n_filtersizes[0],
+            padding = "same",
+            kernel_initializer = "orthogonal")(init_input)
+  x = MaxPooling1D()(x)
+  x = LeakyReLU(0.2)(x)
+  downsampling_outputs.append(x)
+
+  for l, nf, nfs in zip(range(1,L), n_filters, n_filtersizes):
+    x = Conv1D(filters = nf,
+            kernel_size = nfs,
+            padding = "same",
+            kernel_initializer = "orthogonal")(x)
+    x =  MaxPooling1D()(x)
     x = LeakyReLU(0.2)(x)
     downsampling_outputs.append(x)
 
-    for l, nf, nfs in zip(range(1,L), n_filters, n_filtersizes):
-        x = Conv1D(filters = nf,
+  #bottleneck block
+  x = Conv1D(filters = n_filters[-1],
+            kernel_size = n_filtersizes[-1],
+            padding = "same",
+            kernel_initializer = "orthogonal")(x)
+  x = MaxPooling1D()(x)
+  x = Dropout(0.5)(x)
+  x = LeakyReLU(0.2)(x)
+
+  #upsampling blocks
+  for l, nf, nfs, l_in in reversed(list(zip(list(range(L)), n_filters, n_filtersizes, downsampling_outputs))):
+    x = Conv1D(filters = nf,
                 kernel_size = nfs,
                 padding = "same",
                 kernel_initializer = "orthogonal")(x)
-        x =  MaxPooling1D()(x)
-        x = LeakyReLU(0.2)(x)
-        downsampling_outputs.append(x)
-
-    #bottleneck block
-    x = Conv1D(filters = n_filters[-1],
-                kernel_size = n_filtersizes[-1],
-                padding = "same",
-                kernel_initializer = "orthogonal")(x)
-    x = MaxPooling1D()(x)
     x = Dropout(0.5)(x)
-    x = LeakyReLU(0.2)(x)
+    x = ReLU()(x)
+    x = SubPixel1D(x)
+    x = concatenate([x, l_in], axis = 2)
 
-    #upsampling blocks
-    for l, nf, nfs, l_in in reversed(list(zip(list(range(L)), n_filters, n_filtersizes, downsampling_outputs))):
-        x = Conv1D(filters = nf,
-                    kernel_size = nfs,
-                    padding = "same",
-                    kernel_initializer = "orthogonal")(x)
-        x = Dropout(0.5)(x)
-        x = ReLU()(x)
-        x = SubPixel1D(x)
-        x = concatenate(x, l_in)
+  #final convolution layer
+  x = Conv1D(filters = 2,
+            kernel_size = 9,
+            padding = "same",
+            kernel_initializer = "normal")(x)
 
-    #final convolution layer
-    x = Conv1D(filters = 2,
-                kernel_size = 9,
-                padding = "same",
-                kernel_initializer = "normal")
+  x = SubPixel1D(x)
 
-    x = merge([x, init_input])
+  x = Add()([x,init_input])
 
-    return tf.keras.Model(input = init_input, outputs = x)
+  return tf.keras.Model(inputs = init_input, outputs = x)
 
 def SubPixel1D(I, r=2):
     """One-dimensional subpixel upsampling layer
