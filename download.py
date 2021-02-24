@@ -30,13 +30,23 @@ r = requests.get(url, stream = True, verify = False)
 total_size = 8074538516.48 #bits
 total_chunks_num = total_size // chunk_size
 
+flag = -1
+
 with open("dataset/VCTK.zip", "wb") as dataset:
     for chunk_counter, chunk in enumerate(r.iter_content(chunk_size=chunk_size)):
         if chunk:
             dataset.write(chunk)
 
-        file_percent_downloaded = chunk_counter / total_chunks_num
+        file_percent_downloaded = chunk_counter / total_chunks_num * 100
 
-        if file_percent_downloaded * 100 // 5 > 0:
-            print("Finished {}%".format(file_percent_downloaded))
+        if  (int(file_percent_downloaded) % 5 == 0) and (flag < int(file_percent_downloaded)):  
+            if flag == -1:
+                print("Download started. Grab a coffee. You're gonna need it...")
+                flag = 0
+            else:
+                print("Finished {}%".format(int(file_percent_downloaded)))
+
+                flag = file_percent_downloaded
+
+    print("Finished downloading. Next step: unzipping.")
         
